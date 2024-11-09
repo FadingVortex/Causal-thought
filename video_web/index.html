@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Gallery</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .video-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .video-item {
+            width: 90%; /* 设置视频容器宽度为视口宽度的 90% */
+            max-width: 800px; /* 最大宽度为 800px，避免在大屏幕上过分拉伸 */
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .video-item video {
+            width: 100%; /* 视频宽度充满视频容器 */
+            height: auto; /* 高度自适应，保持视频比例 */
+        }
+
+        .video-item .video-title {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">Video Gallery</h1>
+    <div class="video-container" id="videoContainer"></div>
+
+    <input type="file" id="fileInput" accept=".mp4" multiple style="display: none;">
+
+    <button onclick="selectVideos()" style="margin: 20px auto; display: block;">Select Videos</button>
+
+    <script>
+        function selectVideos() {
+            document.getElementById('fileInput').click();
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function() {
+            const videoContainer = document.getElementById('videoContainer');
+            videoContainer.innerHTML = ''; // Clear previous videos
+
+            const files = Array.from(this.files);
+            files.forEach(file => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'video-item';
+
+                const videoTitle = document.createElement('div');
+                videoTitle.className = 'video-title';
+                videoTitle.textContent = file.name; // 设置标题为文件名
+
+                const video = document.createElement('video');
+                video.controls = true;
+                video.innerHTML = `
+                    <source src="${URL.createObjectURL(file)}" type="video/mp4">
+                    你的浏览器不支持HTML5视频标签。
+                `;
+
+                videoItem.appendChild(videoTitle);
+                videoItem.appendChild(video);
+                videoContainer.appendChild(videoItem);
+            });
+        });
+    </script>
+</body>
+</html>
