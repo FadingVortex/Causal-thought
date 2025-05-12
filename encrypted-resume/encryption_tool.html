@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简历数据加密</title>
+    <!-- 引入CryptoJS库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #f3f4f6;
+            --text-color: #1f2937;
+            --light-text: #4b5563;
+            --border-color: #e5e7eb;
+            --highlight: #dbeafe;
+            --error: #ef4444;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 修改lock-screen样式 */
+        .lock-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(10px) saturate(180%);
+            -webkit-backdrop-filter: blur(10px) saturate(180%);
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        /* .container {
+            position: relative;
+            min-height: 100vh;
+            background-image: url('data:image/svg+xml,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="100%" height="100%" fill="%23f0f0f0"/></svg>');
+        } */
+
+        .resume {
+            filter: blur(3px);
+            opacity: 0.9;
+            transition: all 0.5s ease;
+        }
+
+        .resume.unlocked {
+            filter: none;
+            opacity: 1;
+        }
+
+        .container {
+            max-width: 800px; /* 调整宽度以更适合内容 */
+            margin: 2rem auto; /* 居中并增加上下间距 */
+            padding: 2rem;
+            background-color: #ffffff; /* 使用纯白背景 */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 增加柔和阴影 */
+            border-radius: 16px; /* 增加圆角 */
+            border: 1px solid #e5e7eb; /* 添加边框以增强层次感 */
+        }
+
+        /* .lock-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            text-align: center;
+            padding: 2rem;
+        } 
+
+        .resume {
+            display: none;
+        } */
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+            font-weight: 600;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.8rem; /* 增大标题字体 */
+            color: #1e40af; /* 使用深蓝色标题 */
+            font-weight: 700; /* 加粗标题 */
+            margin-bottom: 1rem; /* 减少标题与内容的间距 */
+        }
+
+        .contact-info {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem; /* 增加间距 */
+            color: #6b7280; /* 使用柔和的灰色 */
+            font-size: 1rem; /* 调整字体大小 */
+        }
+
+        .contact-info div {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .contact-info svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .edu-item, .exp-item, .project-item {
+            margin-bottom: 1.5rem;
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .item-title {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .item-subtitle {
+            font-weight: 500;
+            color: var(--light-text);
+        }
+
+        .item-date {
+            color: var(--light-text);
+            font-style: italic;
+        }
+
+        .item-description {
+            margin-top: 0.5rem;
+        }
+
+        .skills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .skill-tag {
+            background-color: var(--highlight);
+            color: var(--primary-dark);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        ul {
+            padding-left: 1.25rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="password"] {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            width: 300px;
+            max-width: 100%;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .error-message {
+            color: var(--error);
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .success-message {
+            color: var(--success);
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .print-button {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            display: none;
+        }
+
+        .print-button svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .dark-mode-toggle {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background-color: var(--secondary-color);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .dark-mode-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        body.dark-mode {
+            --primary-color: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary-color: #374151;
+            --text-color: #f9fafb;
+            --light-text: #d1d5db;
+            --border-color: #4b5563;
+            --highlight: #1e3a8a;
+            background-color: #111827;
+        }
+
+        body.dark-mode .container {
+            background-color: #1f2937;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        @media print {
+            .container {
+                box-shadow: none;
+                margin: 0;
+                padding: 1.5rem;
+            }
+            .print-button, .dark-mode-toggle {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+                margin-top: 1rem;
+                margin-bottom: 1rem;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .item-header {
+                flex-direction: column;
+            }
+            .contact-info {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>简历数据加密示例</h1>
+            <div class="contact-info">
+                <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"></svg>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4m8 0a4 4 0 01-8 0m8 0a4 4 0 00-8 0m8 0a4 4 0 01-8 0m8 0a4 4 0 00-8 0m8 0a4 4 0 01-8 0m8-6a2.5 2.5 0 11-5.001-.001A2.5 2.5 0 0116.5 5z"/>
+                    </svg>
+                    用户信息将被加密
+                </div>
+            </div>
+        </div>
+        <p>此页面演示如何使用CryptoJS对简历数据进行加密</p>
+
+        <div class="encryption-section">
+            <h2>生成加密数据</h2>
+            <label for="custom-password">自定义密码：</label>
+            <input type="password" id="custom-password" placeholder="请输入自定义密码" />
+            <button id="generate-encryption">生成密文</button>
+        </div>
+    </div>
+
+    <script>
+        // 加密数据结构
+        const encryptedData = {
+            // 个人信息
+            name: "", // 加密后的姓名
+            email: "", // 加密后的邮箱
+            phone: "", // 加密后的电话
+            location: "", // 加密后的位置
+            website: "", // 加密后的网站
+
+            // 教育背景 - 数组将在解密后解析
+            education: "",
+
+            // 工作经历
+            experience: "",
+
+            // 项目经验
+            projects: "",
+
+            // 技能
+            skills: "",
+
+            // 荣誉奖项
+            awards: ""
+        };
+
+        // 加密函数
+        function encryptData(plaintext, password) {
+            // 生成随机IV
+            const iv = CryptoJS.lib.WordArray.random(16);
+            
+            // 从密码生成密钥
+            const key = CryptoJS.PBKDF2(password, CryptoJS.enc.Utf8.parse('salt'), {
+                keySize: 256/32,
+                iterations: 1000
+            });
+            
+            // 加密
+            const encrypted = CryptoJS.AES.encrypt(plaintext, key, {
+                iv: iv,
+                mode: CryptoJS.mode.CBC,
+                padding: CryptoJS.pad.Pkcs7
+            });
+            
+            // 返回IV和密文的组合
+            return iv.toString(CryptoJS.enc.Hex) + ':' + encrypted.toString();
+        }
+
+        // 对对象进行加密并转换为JSON
+        function encryptObjectToJSON(obj, password) {
+            return encryptData(JSON.stringify(obj), password);
+        }
+
+        // 使用示例
+        // 设置密码
+        const password = "your_secure_password";
+
+        // 示例个人信息数据
+        const personalInfo = {
+            name: "张三",
+            email: "zhangsan@example.com",
+            phone: "135 1234 5678",
+            location: "北京市海淀区",
+            website: "https://zhangsan.example.com"
+        };
+
+        // 示例教育背景数据
+        const education = [
+            {
+                school: "北京大学",
+                degree: "硕士",
+                major: "计算机科学",
+                startDate: "2018",
+                endDate: "2021",
+                description: "GPA: 3.8/4.0，专业排名前5%"
+            },
+            {
+                school: "清华大学",
+                degree: "学士",
+                major: "软件工程",
+                startDate: "2014",
+                endDate: "2018",
+                description: "GPA: 3.7/4.0，获得优秀毕业生称号"
+            }
+        ];
+
+        // 示例工作经历数据
+        const experience = [
+            {
+                company: "阿里巴巴",
+                position: "高级前端开发工程师",
+                startDate: "2021年7月",
+                endDate: "至今",
+                description: [
+                    "负责电商平台核心页面的前端开发与优化",
+                    "带领5人团队实现新一代React组件库，提高了30%的开发效率",
+                    "优化前端性能，使页面加载速度提升50%，大幅提升用户体验"
+                ]
+            },
+            {
+                company: "腾讯",
+                position: "前端开发工程师",
+                startDate: "2018年8月",
+                endDate: "2021年6月",
+                description: [
+                    "参与微信支付页面的重构与优化",
+                    "设计并实现前端数据可视化系统，获得年度创新奖",
+                    "编写自动化测试脚本，将测试覆盖率提高到90%以上"
+                ]
+            }
+        ];
+
+        // 示例项目经历数据
+        const projects = [
+            {
+                name: "企业级数据可视化平台",
+                role: "前端技术负责人",
+                startDate: "2022年3月",
+                endDate: "2022年12月",
+                description: [
+                    "使用React、TypeScript和Echarts构建灵活可配置的数据可视化平台",
+                    "设计并实现组件化架构，支持拖拽式配置与实时预览",
+                    "集成多种数据源接口，实现自动数据同步与更新"
+                ]
+            },
+            {
+                name: "移动端支付系统重构",
+                role: "核心开发者",
+                startDate: "2019年5月",
+                endDate: "2020年1月",
+                description: [
+                    "使用Vue.js重构移动端支付系统，提升用户体验和开发效率",
+                    "设计实现轻量级状态管理方案，减少90%的状态相关bug",
+                    "优化支付流程，交易完成率提升15%"
+                ]
+            }
+        ];
+
+        // 示例技能数据
+        const skills = ["JavaScript", "TypeScript", "React", "Vue.js", "Node.js", "Webpack", "Git", "Docker", "CSS/SCSS", "数据可视化", "性能优化", "微前端", "敏捷开发"];
+
+        // 示例荣誉奖项数据
+        const awards = [
+            {
+                name: "公司年度技术明星",
+                date: "2023",
+                description: "因在前端性能方面的优化贡献而获得"
+            },
+            {
+                name: "前端开发大赛一等奖",
+                date: "2022",
+                description: "基于WebAssembly的图像处理应用"
+            },
+            {
+                name: "开源项目贡献者奖",
+                date: "2021",
+                description: "为React生态贡献了多个高质量组件库"
+            }
+        ];
+
+        // 加密所有数据
+        encryptedData.name = encryptData(personalInfo.name, password);
+        encryptedData.email = encryptData(personalInfo.email, password);
+        encryptedData.phone = encryptData(personalInfo.phone, password);
+        encryptedData.location = encryptData(personalInfo.location, password);
+        encryptedData.website = encryptData(personalInfo.website, password);
+        encryptedData.education = encryptObjectToJSON(education, password);
+        encryptedData.experience = encryptObjectToJSON(experience, password);
+        encryptedData.projects = encryptObjectToJSON(projects, password);
+        encryptedData.skills = encryptObjectToJSON(skills, password);
+        encryptedData.awards = encryptObjectToJSON(awards, password);
+
+        // 显示加密后的数据
+        console.log("加密后的数据:");
+        console.log(JSON.stringify(encryptedData, null, 2));
+
+        // 在页面上显示加密后的数据
+        const resultContainer = document.createElement('div');
+        resultContainer.style.marginTop = '2rem';
+        resultContainer.style.padding = '2rem';
+        resultContainer.style.backgroundColor = '#e0f2fe'; // 更柔和的背景色
+        resultContainer.style.color = '#0f172a'; // 深色字体
+        resultContainer.style.borderRadius = '12px';
+        resultContainer.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.1)';
+        resultContainer.style.overflowWrap = 'break-word';
+        resultContainer.style.fontFamily = 'Arial, sans-serif';
+
+        const resultTitle = document.createElement('h2');
+        resultTitle.textContent = '加密完成';
+        resultTitle.style.color = '#1e40af'; // 深蓝色标题
+        resultTitle.style.fontSize = '1.8rem';
+        resultTitle.style.marginBottom = '1rem';
+        resultContainer.appendChild(resultTitle);
+
+        const resultText = document.createElement('p');
+        resultText.textContent = '加密后的数据如下：';
+        resultText.style.fontSize = '1.2rem';
+        resultText.style.marginBottom = '1rem';
+        resultContainer.appendChild(resultText);
+
+        const resultPre = document.createElement('pre');
+        resultPre.textContent = JSON.stringify(encryptedData, null, 2);
+        resultPre.style.backgroundColor = '#ffffff'; // 白色背景
+        resultPre.style.padding = '1.5rem';
+        resultPre.style.borderRadius = '8px';
+        resultPre.style.overflowX = 'auto';
+        resultPre.style.fontSize = '1rem';
+        resultPre.style.lineHeight = '1.5';
+        resultPre.style.color = '#374151'; // 深灰色字体
+        resultPre.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.05)';
+        resultContainer.appendChild(resultPre);
+
+        document.body.appendChild(resultContainer);
+
+        document.getElementById('generate-encryption').addEventListener('click', () => {
+            const customPassword = document.getElementById('custom-password').value;
+            if (!customPassword) {
+                alert('请输入自定义密码！');
+                return;
+            }
+
+            encryptedData.name = encryptData(personalInfo.name, customPassword);
+            encryptedData.email = encryptData(personalInfo.email, customPassword);
+            encryptedData.phone = encryptData(personalInfo.phone, customPassword);
+            encryptedData.location = encryptData(personalInfo.location, customPassword);
+            encryptedData.website = encryptData(personalInfo.website, customPassword);
+            encryptedData.education = encryptObjectToJSON(education, customPassword);
+            encryptedData.experience = encryptObjectToJSON(experience, customPassword);
+            encryptedData.projects = encryptObjectToJSON(projects, customPassword);
+            encryptedData.skills = encryptObjectToJSON(skills, customPassword);
+            encryptedData.awards = encryptObjectToJSON(awards, customPassword);
+
+            // 使用自定义密码加密数据
+            console.log("加密后的数据:");
+            console.log(JSON.stringify(encryptedData, null, 2));
+            resultPre.textContent = JSON.stringify(encryptedData, null, 2);
+        });
+    </script>
+</body>
+</html>

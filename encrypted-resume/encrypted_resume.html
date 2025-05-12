@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加密简历</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #f3f4f6;
+            --text-color: #1f2937;
+            --light-text: #4b5563;
+            --border-color: #e5e7eb;
+            --highlight: #dbeafe;
+            --error: #ef4444;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 修改lock-screen样式 */
+        .lock-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(10px) saturate(180%);
+            -webkit-backdrop-filter: blur(10px) saturate(180%);
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        /* .container {
+            position: relative;
+            min-height: 100vh;
+            background-image: url('data:image/svg+xml,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="100%" height="100%" fill="%23f0f0f0"/></svg>');
+        } */
+
+        .resume {
+            filter: blur(3px);
+            opacity: 0.9;
+            transition: all 0.5s ease;
+        }
+
+        .resume.unlocked {
+            filter: none;
+            opacity: 1;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* .lock-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            text-align: center;
+            padding: 2rem;
+        } 
+
+        .resume {
+            display: none;
+        } */
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+            font-weight: 600;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-info {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            color: var(--light-text);
+            font-size: 0.95rem;
+        }
+
+        .contact-info div {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .contact-info svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .edu-item, .exp-item, .project-item {
+            margin-bottom: 1.5rem;
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .item-title {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .item-subtitle {
+            font-weight: 500;
+            color: var(--light-text);
+        }
+
+        .item-date {
+            color: var(--light-text);
+            font-style: italic;
+        }
+
+        .item-description {
+            margin-top: 0.5rem;
+        }
+
+        .skills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .skill-tag {
+            background-color: var(--highlight);
+            color: var(--primary-dark);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        ul {
+            padding-left: 1.25rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="password"] {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            width: 300px;
+            max-width: 100%;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .error-message {
+            color: var(--error);
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .success-message {
+            color: var(--success);
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .print-button {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            display: none;
+        }
+
+        .print-button svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .dark-mode-toggle {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background-color: var(--secondary-color);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .dark-mode-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        body.dark-mode {
+            --primary-color: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary-color: #374151;
+            --text-color: #f9fafb;
+            --light-text: #d1d5db;
+            --border-color: #4b5563;
+            --highlight: #1e3a8a;
+            background-color: #111827;
+        }
+
+        body.dark-mode .container {
+            background-color: #1f2937;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        @media print {
+            .container {
+                box-shadow: none;
+                margin: 0;
+                padding: 1.5rem;
+            }
+            .print-button, .dark-mode-toggle {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+                margin-top: 1rem;
+                margin-bottom: 1rem;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .item-header {
+                flex-direction: column;
+            }
+            .contact-info {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="lock-screen" id="lockScreen">
+        <h1>加密简历</h1>
+        <p>请输入密码查看完整简历内容</p>
+        <input type="password" id="passwordInput" placeholder="输入密码解锁简历">
+        <button id="unlockButton">解锁</button>
+        <p class="error-message" id="errorMessage">密码错误，请重试</p>
+        <p class="success-message" id="successMessage">解密成功！正在加载简历...</p>
+    </div>
+    <div class="container">
+        <div class="resume" id="resumeContent">
+            <div class="header">
+                <h1 id="fullName">简历</h1>
+                <div class="contact-info">
+                    <div id="email">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <span></span>
+                    </div>
+                    <div id="phone">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        <span></span>
+                    </div>
+                    <div id="location">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span></span>
+                    </div>
+                    <div id="website">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        </svg>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>教育背景</h2>
+                <div class="edu-container" id="educationContainer">
+                    <!-- 动态加载教育信息 -->
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>工作经历</h2>
+                <div class="exp-container" id="experienceContainer">
+                    <!-- 动态加载工作经历 -->
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>项目经验</h2>
+                <div class="project-container" id="projectContainer">
+                    <!-- 动态加载项目经验 -->
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>技能</h2>
+                <div class="skills" id="skillsContainer">
+                    <!-- 动态加载技能标签 -->
+                </div>
+            </div>
+
+            <div class="section" id="awardsSection">
+                <h2>荣誉奖项</h2>
+                <div id="awardsContainer">
+                    <!-- 动态加载荣誉奖项 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="print-button" id="printButton" title="打印简历">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+    </button>
+
+    <button class="dark-mode-toggle" id="darkModeToggle" title="切换深色/浅色模式">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="darkModeIcon">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="lightModeIcon" style="display: none;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+    </button>
+
+    <script>
+        // 定义加密数据 - 这些将是加密后的值
+        // const encryptedData = {
+        //     // 个人信息
+        //     name: "", // 加密后的姓名
+        //     email: "", // 加密后的邮箱
+        //     phone: "", // 加密后的电话
+        //     location: "", // 加密后的位置
+        //     website: "", // 加密后的网站
+
+        //     // 教育背景 - 数组将在解密后解析
+        //     education: "",
+
+        //     // 工作经历
+        //     experience: "",
+
+        //     // 项目经验
+        //     projects: "",
+
+        //     // 技能
+        //     skills: "",
+
+        //     // 荣誉奖项
+        //     awards: ""
+        // };
+        const encryptedData = {
+  "name": "cdc23fb685efeaa754edfa218c1c6488:0MynyGaM8/RHkPV3Z0mlWw==",
+  "email": "68233289e8261a8eb2312e39633196cc:13BeNqpUXvFRWlbgvSwSwSh1v6iO4aNwuNq5hvLAjHU=",
+  "phone": "346cc1a7fecd95a18aaeba00fce54bb8:sadoQEb+GW+aqz2oDSZN0w==",
+  "location": "f3c8645926c47bedbe4ee00b7ce4d4d3:PbhFBlekDtVcvB+NLsKs6fSm0Ljb77Kkf9/uCx9ZMwo=",
+  "website": "21f4ac6cd99ec66bbe8cb1ab4c91d546:vqc8I0HzkvcJChJwYKcC5g86fZYzsR6WMF3+VbPli80=",
+  "education": "f3a3b6f8f535be0864a3cda55c7eb55a:x0RE+jbAgO1lQN0bJ2/dehcPi/RaKooNucccHUALJXvWckGdu7ceWNq7aNHYKz+FBk6O8cgPU82GRvYzoiPKUffxdYFPDIYr3UGrJwTCpBIcSDHf+YdU1zf44PadzDKl8T4hSMt0LBv3z0nwE1AvJ4o32AY0Uixc6M0lhYbCj4jOGrp8V/Y8dN7wuI84SEU+cytqLZxV5s1NcTLKQ/sppeOkoUXaIPzO7HIKLZuNNo12wjfNFam43ROnsUouVWRcLdk3JIi23zil1TmW+AqFvCZAr+z7chrDk6h7cBmPOOjv4ofiYyvzLLGMg0aCGP3x0nyoG/yfqHvNqrjaKzRYaYZgpGHh0qRE3XwnW2NqJYtkzm67IObgqL8GbmxUdwZ/vaCbo6LMZCfdU2/DoYgoSUixU1zzg4NuV5h/ErVTLmY=",
+  "experience": "6c6f82114d6cccbb5f54c517a78b343b:i1798CyILf3/jXbSFdIEO1644yEsxlBTtPERL1jiYXCYNOPyfLOqFllGVCVXTKxXH6WiC4lWdoqnzNSr114n56PPcENaJA8Z4S6CAxyIcFZ0rNe2jtwEPuqnfd6QnfA5fYtTbhF60VenIi6dbpod13BReEh0n8n4bQaos18Im1hU6pBnNJOJNcLnTbuf00AEbw+0crsbPaWnRCTx+LHeudDxPnfcEQwCfxTUDtY00KvSuF7KxaJPgniEV2iOsGHPSk1StxupOdHy4n5neLMVezeR2XDQDqEr6oitPnnScj7oOmv+D3SkCfHsG6fw0OakFtISg24bLFqV7X4zyMEAJYZ4aftlPTL/CFwvp9zCbKVyAacvAzFC679uUig58eEKpZOn3OZfMTWB2VU0wtk1aZ6gSiRS7xHEeVKmHnvxGV/ZB9asaBHkni4wrKm/LBLjPMcieR5AIc/4uLuYgthNG+P5QZI7L167fBZbkj7HaKEmKotcQHoBeK6gm+GAuDnci0c4YfaMcWSunJ5bhBmo5FgmMssYdC2xN3BDKPY6+h51c9cdIB5LgZol0Xw/OAATIGnZJ97L/H1IrKxDHIVnf+HoeLN3dTxW2C1QkCVkkJ6r07HzhNPTIzQuVdk+01fXbcyasSDtow+FdzgJ68PMii6s2Cy5KqxqCgxa8vxM89t0KxdMu8cf4KC+ucodt/twvDYxCAOgm15Zn6uWFnyLYlGCxv4ew7Ztw+tEuOxjEyZO3ylMevkAiiW4QgJw6tk39XRpskuxvhhd++UMu7OG3EQAHGWhFqC5icP1sL2+qWn+7t33lgi4Fs8nOQ2BXFSzDeFqpMXnjb8NmejUuyR7zrxr5k4QM1hqooPTxFmFPH0=",
+  "projects": "2c7715004a5e8e0d4996fad6d0be0d01:7p18Fmc/cdJsEQ4ihjGv4Sp2njdkfD9ISUrB/8GFAJvRE1cEqOz18xWcBhERdjLC53tmZezgN4in/tE6nIrg9ojjpq8hoRlcsUFe5p+XcS2/PwL1EXnLnSqknbxq4VscHkdwJzTmx3yaNAuFSj56rqk9EEq3jK5XE8cS2QX+Z/Xq1nMWvJVhLN3sbvmtBA499zZ7iSO2HZ3VoSLEAAhs4JeNcT/3bxWC5gojfE96bNghaJmDCntN/u1GUIwTNS1MRBE78z5GAIfjnji+CMYHrHtbmnwSZE7JtUEYuaeHKaod2hKeVvqs/YJvrTzUp4LMWbmiVPBuKorsZDU+sH0iIjmJQDccocmjWXY/QorUIEbbOVqVJUZvN054opXgNUJxiz/RjS14AO3BV+fQmDLPSvj86oyGIzFZmz4btbHze/gffKDI7n690m/y3GOYhJtfckrrbQxHlGa4V812oIMcqCY6R4ZvDqnaj9q4ncj0FXX/0G3zszI7SefKOlm+6J1z0wt1UfAcGnOt7gRlXjesIO3NwbVMoaZoHSEvl3x3Fn+pxMHzlrKs1S0Byi0Ukr6YKP8OMwc5rM47TKXaowlDME9YsWFwJXRlVBeDoHGJohRsXF6deUYzZE9N4v8A3QAJ349sSrABU5Wo2Y3orxXjbSqwrDJplBLAkOhPJhVMyVn3D8oC4oqKjp7khzaJ+5Sc3udlc8SRkWSZdKfLQpwIAW0i3Zboa0C4AW8R1vLv9kv6ZsbMDSDGp14XlzDzT0fodIpHPki+ToIynOqax57sji/ZcHaMO57K/FGakNNu38Pvp30thxc8VQgoJX9/swNh6CEs8EwXWa6qc27OaB3cU6YfqATOONk7hlYQpZ1ckDnANnlO1MQD4r6NPKGwdd4s/m7w/CH3zBykN487fyZCvNialZ0GGjiXmH0YqFI+lq8=",
+  "skills": "2921eeafa3a18dc0ee0657e825d21acb:7Rj0KKZBn8xrtLPxldmcQZAoFdr6e6dHi0fAXRWRoBdufwOSYc+ZgnjIZ6hJY/KaDf6qbaxMDoTdvK26CsABxGugSoeA3kSMWBdiho7zHuVNUGfQEKlQnDMJkePwnetXTe/yi38OI4tYPbz1YHF4xQYoRrFTNwQHxV1+Ff10D5fjrHswGrqfAtK2a6Gwx4LtRAfunTTGOvBEN/RRBWnc8Q==",
+  "awards": "8aef329b878d6fb0cfaff921bae0d1e8:zeK4EwCPeth4hV68iPC6u2l1M1TJzg4dq1/QPmRyimDKly6ZDJP8WHmpMQF0nLI6RWueexhAOimfNCkY4tkf8h5MP/5zaTRZFId8QfPW4VRHzcwL9rQqia00S+3WFz/09xg3qludrAXyY6lCfIPvgHI4ibWHveSs5jAvZlVO9FVfzVzrje0mCJnxQaoE/CBvPldW83qBnxD1MpSEQfPGTgavfsiPt6DNskWCCFi57PC4U4AmCK3UH4tuSEVzTpnuJjmoEFY0J08ZGaNE9NJhbEzXwBKluTgxT7zE7CM+7u97YVnqCQIp/i3sWWDNizmFbR6UeNJdeCgS6pxC6UVpS4fR/GRNV6VBtTkmyYCx8tdP3cRkOBH86vBR0i+yfR6PHJZOW9/mXQs9IY2V6gSoEMqYH2yeU3Y/dZm3cfRtpr7k5GG/3YRov5iw0DlsAQcUDMm6gM+yL3//ANYW9S3I6g=="
+}
+
+        // 初始化页面交互
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('passwordInput');
+            const unlockButton = document.getElementById('unlockButton');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const lockScreen = document.getElementById('lockScreen');
+            const resumeContent = document.getElementById('resumeContent');
+            const printButton = document.getElementById('printButton');
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const darkModeIcon = document.getElementById('darkModeIcon');
+            const lightModeIcon = document.getElementById('lightModeIcon');
+
+            // 在输入框按下回车时触发解锁按钮
+            passwordInput.addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    unlockButton.click();
+                }
+            });
+
+            // 解锁按钮点击事件
+            unlockButton.addEventListener('click', function() {
+                const password = passwordInput.value;
+                if (!password) {
+                    errorMessage.style.display = 'block';
+                    successMessage.style.display = 'none';
+                    return;
+                }
+
+                try {
+                    // 尝试解密数据
+                    errorMessage.style.display = 'none';
+                    successMessage.style.display = 'block';
+                    
+                    // 使用密码解密数据
+                    const decryptedData = decryptAllData(password);
+                    
+                    // 延迟一下再填充简历，营造加载感觉
+                    setTimeout(() => {
+                        // 填充简历内容
+                        populateResume(decryptedData);
+                        
+                        // 显示简历内容
+                        lockScreen.style.display = 'none';
+                        // resumeContent.style.display = 'block';
+                        resumeContent.classList.add('unlocked'); // 添加解锁样式
+                        printButton.style.display = 'flex';
+                        darkModeToggle.style.display = 'flex';
+                    }, 1000);
+                } catch (error) {
+                    errorMessage.style.display = 'block';
+                    successMessage.style.display = 'none';
+                    console.error("解密失败:", error);
+                }
+            });
+
+            // 打印按钮事件
+            printButton.addEventListener('click', function() {
+                window.print();
+            });
+
+            // 深色模式切换
+            darkModeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
+                if (document.body.classList.contains('dark-mode')) {
+                    darkModeIcon.style.display = 'none';
+                    lightModeIcon.style.display = 'block';
+                } else {
+                    darkModeIcon.style.display = 'block';
+                    lightModeIcon.style.display = 'none';
+                }
+            });
+        });
+
+        // 使用AES-GCM算法解密数据
+        function decryptData(encryptedData, password) {
+            if (!encryptedData) return '';
+            
+            try {
+                // 从加密文本中分离IV和加密数据
+                const encryptedParts = encryptedData.split(':');
+                if (encryptedParts.length !== 2) {
+                    throw new Error('无效的加密格式');
+                }
+                
+                const iv = CryptoJS.enc.Hex.parse(encryptedParts[0]);
+                const ciphertext = CryptoJS.enc.Base64.parse(encryptedParts[1]);
+                
+                // 从密码生成密钥
+                const key = CryptoJS.PBKDF2(password, CryptoJS.enc.Utf8.parse('salt'), {
+                    keySize: 256/32,
+                    iterations: 1000
+                });
+                
+                // 解密
+                const decrypted = CryptoJS.AES.decrypt(
+                    { ciphertext: ciphertext },
+                    key,
+                    {
+                        iv: iv,
+                        mode: CryptoJS.mode.CBC,
+                        padding: CryptoJS.pad.Pkcs7
+                    }
+                );
+                
+                return decrypted.toString(CryptoJS.enc.Utf8);
+            } catch (error) {
+                console.error('解密失败:', error);
+                throw new Error('解密失败，请检查密码是否正确');
+            }
+        }
+
+        // 解密所有数据
+        function decryptAllData(password) {
+            const result = {};
+            
+            // 解密基本信息
+            result.name = decryptData(encryptedData.name, password);
+            result.email = decryptData(encryptedData.email, password);
+            result.phone = decryptData(encryptedData.phone, password);
+            result.location = decryptData(encryptedData.location, password);
+            result.website = decryptData(encryptedData.website, password);
+            
+            // 解密并解析教育背景
+            const educationStr = decryptData(encryptedData.education, password);
+            result.education = educationStr ? JSON.parse(educationStr) : [];
+            
+            // 解密并解析工作经历
+            const experienceStr = decryptData(encryptedData.experience, password);
+            result.experience = experienceStr ? JSON.parse(experienceStr) : [];
+            
+            // 解密并解析项目经验
+            const projectsStr = decryptData(encryptedData.projects, password);
+            result.projects = projectsStr ? JSON.parse(projectsStr) : [];
+            
+            // 解密并解析技能
+            const skillsStr = decryptData(encryptedData.skills, password);
+            result.skills = skillsStr ? JSON.parse(skillsStr) : [];
+            
+            // 解密并解析荣誉奖项
+            const awardsStr = decryptData(encryptedData.awards, password);
+            result.awards = awardsStr ? JSON.parse(awardsStr) : [];
+            
+            return result;
+        }
+
+        // 填充简历内容
+        function populateResume(data) {
+            // 填充个人信息
+            document.getElementById('fullName').textContent = data.name || '姓名';
+            document.getElementById('email').querySelector('span').textContent = data.email || '';
+            document.getElementById('phone').querySelector('span').textContent = data.phone || '';
+            document.getElementById('location').querySelector('span').textContent = data.location || '';
+            document.getElementById('website').querySelector('span').textContent = data.website || '';
+            
+            // 隐藏空的联系信息
+            if (!data.email) document.getElementById('email').style.display = 'none';
+            if (!data.phone) document.getElementById('phone').style.display = 'none';
+            if (!data.location) document.getElementById('location').style.display = 'none';
+            if (!data.website) document.getElementById('website').style.display = 'none';
+            
+            // 填充教育背景
+            const educationContainer = document.getElementById('educationContainer');
+            educationContainer.innerHTML = '';
+            
+            if (data.education && data.education.length > 0) {
+                data.education.forEach(edu => {
+                    const eduElement = document.createElement('div');
+                    eduElement.className = 'edu-item';
+                    eduElement.innerHTML = `
+                        <div class="item-header">
+                            <div>
+                                <div class="item-title">${edu.school || ''}</div>
+                                <div class="item-subtitle">${edu.degree || ''} ${edu.major ? '· ' + edu.major : ''}</div>
+                            </div>
+                            <div class="item-date">${edu.startDate || ''} - ${edu.endDate || ''}</div>
+                        </div>
+                        <div class="item-description">${edu.description || ''}</div>
+                    `;
+                    educationContainer.appendChild(eduElement);
+                });
+            }
+            
+            // 填充工作经历
+            const experienceContainer = document.getElementById('experienceContainer');
+            experienceContainer.innerHTML = '';
+            
+            if (data.experience && data.experience.length > 0) {
+                data.experience.forEach(exp => {
+                    const expElement = document.createElement('div');
+                    expElement.className = 'exp-item';
+                    
+                    // 构建工作描述列表
+                    let descriptionHTML = '';
+                    if (exp.description) {
+                        if (Array.isArray(exp.description)) {
+                            descriptionHTML = '<ul>';
+                            exp.description.forEach(item => {
+                                descriptionHTML += `<li>${item}</li>`;
+                            });
+                            descriptionHTML += '</ul>';
+                        } else {
+                            descriptionHTML = `<div>${exp.description}</div>`;
+                        }
+                    }
+                    
+                    expElement.innerHTML = `
+                        <div class="item-header">
+                            <div>
+                                <div class="item-title">${exp.company || ''}</div>
+                                <div class="item-subtitle">${exp.position || ''}</div>
+                            </div>
+                            <div class="item-date">${exp.startDate || ''} - ${exp.endDate || ''}</div>
+                        </div>
+                        <div class="item-description">${descriptionHTML}</div>
+                    `;
+                    experienceContainer.appendChild(expElement);
+                });
+            }
+            
+            // 填充项目经历
+            const projectContainer = document.getElementById('projectContainer');
+            projectContainer.innerHTML = '';
+            
+            if (data.projects && data.projects.length > 0) {
+                data.projects.forEach(project => {
+                    const projectElement = document.createElement('div');
+                    projectElement.className = 'project-item';
+                    
+                    // 构建项目描述列表
+                    let descriptionHTML = '';
+                    if (project.description) {
+                        if (Array.isArray(project.description)) {
+                            descriptionHTML = '<ul>';
+                            project.description.forEach(item => {
+                                descriptionHTML += `<li>${item}</li>`;
+                            });
+                            descriptionHTML += '</ul>';
+                        } else {
+                            descriptionHTML = `<div>${project.description}</div>`;
+                        }
+                    }
+                    
+                    projectElement.innerHTML = `
+                        <div class="item-header">
+                            <div>
+                                <div class="item-title">${project.name || ''}</div>
+                                <div class="item-subtitle">${project.role || ''}</div>
+                            </div>
+                            <div class="item-date">${project.startDate || ''} - ${project.endDate || ''}</div>
+                        </div>
+                        <div class="item-description">${descriptionHTML}</div>
+                    `;
+                    projectContainer.appendChild(projectElement);
+                });
+            }
+            
+            // 填充技能
+            const skillsContainer = document.getElementById('skillsContainer');
+            skillsContainer.innerHTML = '';
+            
+            if (data.skills && data.skills.length > 0) {
+                data.skills.forEach(skill => {
+                    const skillElement = document.createElement('div');
+                    skillElement.className = 'skill-tag';
+                    skillElement.textContent = skill;
+                    skillsContainer.appendChild(skillElement);
+                });
+            }
+            
+            // 填充荣誉奖项
+            const awardsContainer = document.getElementById('awardsContainer');
+            const awardsSection = document.getElementById('awardsSection');
+            awardsContainer.innerHTML = '';
+            
+            if (data.awards && data.awards.length > 0) {
+                awardsSection.style.display = 'block';
+                const awardsList = document.createElement('ul');
+                
+                data.awards.forEach(award => {
+                    const awardItem = document.createElement('li');
+                    awardItem.innerHTML = `
+                        <strong>${award.name}</strong>
+                        ${award.date ? ' (' + award.date + ')' : ''}
+                        ${award.description ? ': ' + award.description : ''}
+                    `;
+                    awardsList.appendChild(awardItem);
+                });
+                
+                awardsContainer.appendChild(awardsList);
+            } else {
+                awardsSection.style.display = 'none';
+            }
+        }
+
+    </script>
+</body>
